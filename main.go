@@ -1,20 +1,35 @@
 package main
 
 import (
+	"encoding/csv"
 	"fmt"
+	"log"
+	"os"
 
 	"github.com/gocolly/colly"
 )
 
 func main() {
-	c := colly.NewCollector(
-		colly.AllowedDomains("en.wikipedia.org"),
-	)
+	fName := "data.csv"
+	file, err := os.Create(fName)
+	if err != nil {
+		log.Fatalf("Could not create file, err: %q", err)
+	}
+	defer file.Close()
 
-	c.OnHTML(".mw-parser-output", func(h *colly.HTMLElement) {
-		links := h.ChildAttrs("a", "href")
-		fmt.Println(links)
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	c := colly.NewCollector()
+	c.OnHTML("table#customers", func(h *colly.HTMLElement) {
+		h.ForEach("tr", func(i int, h *colly.HTMLElement) {
+			writer.Write([]string{
+				h.ChildText("td:nth-child(1)"),
+				h.ChildText("td:nth-child(2)"),
+				h.ChildText("td:nth-child(3)"),
+			})
+		})
+		fmt.Println("Finished successfully")
 	})
-
-	c.Visit("https://en.wikipedia.org/wiki/Web_scraping")
+	c.Visit("https://www.w3schools.com/html/html_tables.asp")
 }
